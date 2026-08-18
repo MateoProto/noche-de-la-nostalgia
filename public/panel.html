@@ -42,6 +42,7 @@
               <th>Viene</th>
               <th>Mensaje</th>
               <th>Fecha</th>
+              <th></th>
             </tr>
           </thead>
           <tbody id="filas"></tbody>
@@ -86,10 +87,25 @@
         '<td>' + (Number(r.asiste) === 1 ? 'Sí' : 'No') + '</td>' +
         '<td>' + esc(r.mensaje || '·') + '</td>' +
         '<td class="fecha">' + esc(String(r.created_at).slice(0, 16)) + '</td>' +
+        '<td><button type="button" class="nn-btn-ghost btn-borrar" data-id="' + esc(r.id) + '">Borrar</button></td>' +
         '</tr>'
     }).join('')
     sinDatos.classList.toggle('hidden', res.rows.length > 0)
   }
+
+  filas.addEventListener('click', function (e) {
+    var btn = e.target.closest('.btn-borrar')
+    if (!btn) return
+    if (!confirm('¿Borrar esta respuesta? No se puede deshacer.')) return
+    fetch('/api/borrar', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ clave: clave, id: btn.dataset.id })
+    })
+      .then(function (r) { if (r.ok) return consultar() })
+      .then(function (res) { if (res) pintar(res) })
+      .catch(function () { /* mantiene la vista */ })
+  })
 
   function consultar() {
     return fetch('/api/panel', {

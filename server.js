@@ -221,6 +221,29 @@ async function handleApi(req, res, url) {
     return sendJson(res, 200, { ok: true, ...panelData() })
   }
 
+  if (req.method === 'GET' && url.pathname === '/api/foto') {
+    const rutaFoto = path.join(PUBLIC_DIR, 'fiesta.jpg')
+    if (!fs.existsSync(rutaFoto)) return sendJson(res, 404, { ok: false })
+    securityHeaders(res)
+    res.writeHead(200, { 'content-type': 'image/jpeg', 'cache-control': 'no-cache' })
+    res.end(fs.readFileSync(rutaFoto))
+    return
+  }
+
+  if (req.method === 'POST' && url.pathname === '/api/borrar') {
+    let body
+    try {
+      body = await readBody(req)
+    } catch {
+      return sendJson(res, 400, { ok: false, error: 'bad_request' })
+    }
+    if (clean(body.clave, 100) !== PANEL_KEY) return sendJson(res, 403, { ok: false })
+    const id = Number(body.id)
+    if (!Number.isInteger(id)) return sendJson(res, 400, { ok: false, error: 'missing_id' })
+    db.prepare(`DELETE FROM rsvps WHERE id = ?`).run(id)
+    return sendJson(res, 200, { ok: true })
+  }
+
   if (req.method === 'POST' && url.pathname === '/api/foto') {
     if (rateLimited(ip)) return sendJson(res, 429, { ok: false, error: 'rate' })
     if (clean(req.headers['x-clave'], 100) !== PANEL_KEY) {

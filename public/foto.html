@@ -103,7 +103,7 @@
       })
       .then(function () {
         exito.classList.remove('hidden')
-        previewImg.src = '/fiesta.jpg?v=' + Date.now()
+        previewImg.src = '/api/foto?v=' + Date.now()
         preview.classList.remove('hidden')
       })
       .catch(function (e) { fallar(e.message) })

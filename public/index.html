@@ -220,6 +220,14 @@
     }).join('')
   }
 
+  // si hay una foto subida más nueva que la del sitio, usarla de fondo
+  fetch('/api/foto', { method: 'GET' }).then(function (r) {
+    if (r.ok) {
+      var bg = document.querySelector('.lugar-bg')
+      if (bg) bg.style.backgroundImage = "url('/api/foto?v=" + Date.now() + "')"
+    }
+  }).catch(function () { /* queda la foto del sitio */ })
+
   function cargarPlaylist() {
     fetch('/api/playlist')
       .then(function (r) { return r.json() })
