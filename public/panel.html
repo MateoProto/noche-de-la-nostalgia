@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Panel · Noche de la Nostalgia</title>
+  <meta name="robots" content="noindex" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600&family=Righteous&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+<div class="nn-page">
+  <main class="panel-main wrap-wide">
+    <p class="nn-eyebrow center">Solo para quien organiza</p>
+    <h1 class="section-title" style="margin-top:0.5rem">Panel de la fiesta</h1>
+
+    <!-- entrada con clave -->
+    <form id="puerta" class="nn-card panel-card-narrow">
+      <label class="nn-label" for="clave">Clave del panel</label>
+      <input class="nn-input" id="clave" type="password" autocomplete="current-password" placeholder="Tu clave de organizador" />
+      <p class="nn-error hidden" id="puerta-error"></p>
+      <button class="nn-submit" type="submit" id="entrar">Entrar</button>
+    </form>
+
+    <!-- contenido del panel -->
+    <div id="panel" class="hidden">
+      <div class="chips-row" id="stats"></div>
+      <div class="actions-row">
+        <button type="button" class="nn-btn-ghost" id="btn-actualizar">Actualizar</button>
+        <button type="button" class="nn-btn-ghost" id="btn-csv">Descargar CSV</button>
+        <button type="button" class="nn-btn-ghost" id="btn-copiar">Copiar lista de temas</button>
+      </div>
+      <div class="nn-card table-wrap">
+        <table class="nn-table">
+          <thead>
+            <tr>
+              <th>Nombre</th>
+              <th>Canción</th>
+              <th>Viene</th>
+              <th>Mensaje</th>
+              <th>Fecha</th>
+            </tr>
+          </thead>
+          <tbody id="filas"></tbody>
+        </table>
+        <p class="empty-note hidden" id="sin-datos">Todavía no hay respuestas. Compartí el link de la fiesta.</p>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+(function () {
+  var clave = ''
+  var datos = null
+
+  var puerta = document.getElementById('puerta')
+  var puertaError = document.getElementById('puerta-error')
+  var entrar = document.getElementById('entrar')
+  var panel = document.getElementById('panel')
+  var stats = document.getElementById('stats')
+  var filas = document.getElementById('filas')
+  var sinDatos = document.getElementById('sin-datos')
+
+  function esc(t) {
+    var d = document.createElement('div')
+    d.textContent = t == null ? '' : String(t)
+    return d.innerHTML
+  }
+
+  function pintar(res) {
+    datos = res
+    stats.innerHTML =
+      '<span class="nn-chip"><b>' + res.stats.personas + '</b> personas en total</span>' +
+      '<span class="nn-chip"><b>' + res.stats.confirmados + '</b> confirmados</span>' +
+      '<span class="nn-chip"><b>' + res.stats.noVienen + '</b> no llegan</span>' +
+      '<span class="nn-chip"><b>' + res.stats.respuestas + '</b> respuestas</span>'
+    filas.innerHTML = res.rows.map(function (r) {
+      var extra = Number(r.acompanantes) > 0 ? ' (+' + r.acompanantes + ')' : ''
+      return '<tr>' +
+        '<td>' + esc(r.nombre) + ' ' + esc(r.apellido) + extra + '</td>' +
+        '<td>' + esc(r.cancion) + '</td>' +
+        '<td>' + (Number(r.asiste) === 1 ? 'Sí' : 'No') + '</td>' +
+        '<td>' + esc(r.mensaje || '·') + '</td>' +
+        '<td class="fecha">' + esc(String(r.created_at).slice(0, 16)) + '</td>' +
+        '</tr>'
+    }).join('')
+    sinDatos.classList.toggle('hidden', res.rows.length > 0)
+  }
+
+  function consultar() {
+    return fetch('/api/panel', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ clave: clave })
+    }).then(function (r) {
+      if (r.status === 403) throw new Error('clave')
+      if (!r.ok) throw new Error('server')
+      return r.json()
+    })
+  }
+
+  puerta.addEventListener('submit', function (e) {
+    e.preventDefault()
+    puertaError.classList.add('hidden')
+    clave = document.getElementById('clave').value
+    entrar.disabled = true
+    entrar.textContent = 'Abriendo...'
+    consultar()
+      .then(function (res) {
+        pintar(res)
+        puerta.classList.add('hidden')
+        panel.classList.remove('hidden')
+      })
+      .catch(function (err) {
+        puertaError.textContent = err.message === 'clave'
+          ? 'Esa clave no abre esta puerta.'
+          : 'No pudimos consultar la lista. Probá de nuevo.'
+        puertaError.classList.remove('hidden')
+      })
+      .finally(function () {
+        entrar.disabled = false
+        entrar.textContent = 'Entrar'
+      })
+  })
+
+  document.getElementById('btn-actualizar').addEventListener('click', function () {
+    consultar().then(pintar).catch(function () { /* mantiene la vista */ })
+  })
+
+  document.getElementById('btn-csv').addEventListener('click', function () {
+    fetch('/api/export', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ clave: clave })
+    })
+      .then(function (r) { return r.json() })
+      .then(function (res) {
+        if (!res.ok) return
+        var blob = new Blob([res.csv], { type: 'text/csv;charset=utf-8' })
+        var url = URL.createObjectURL(blob)
+        var a = document.createElement('a')
+        a.href = url
+        a.download = 'noche-nostalgia-invitados.csv'
+        a.click()
+        URL.revokeObjectURL(url)
+      })
+  })
+
+  var btnCopiar = document.getElementById('btn-copiar')
+  btnCopiar.addEventListener('click', function () {
+    if (!datos) return
+    var texto = datos.rows.map(function (r) {
+      return r.cancion + ' (' + r.nombre + ' ' + r.apellido + ')'
+    }).join('\n')
+    navigator.clipboard.writeText(texto).then(function () {
+      btnCopiar.textContent = '¡Copiado!'
+      setTimeout(function () { btnCopiar.textContent = 'Copiar lista de temas' }, 2000)
+    })
+  })
+})()
+</script>
+</body>
+</html>

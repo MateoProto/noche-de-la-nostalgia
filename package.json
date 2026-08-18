@@ -1,0 +1,12 @@
+{
+  "name": "noche-de-la-nostalgia",
+  "version": "1.0.0",
+  "description": "Invitación y lista de invitados para la fiesta de la Noche de la Nostalgia",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=22.5.0"
+  }
+}
