@@ -71,6 +71,34 @@ function sendJson(res, status, obj) {
   res.end(JSON.stringify(obj))
 }
 
+function readRawBody(req, maxBytes) {
+  return new Promise((resolve, reject) => {
+    let size = 0
+    const chunks = []
+    req.on('data', (c) => {
+      size += c.length
+      if (size > maxBytes) {
+        reject(new Error('too_large'))
+        req.destroy()
+        return
+      }
+      chunks.push(c)
+    })
+    req.on('end', () => resolve(Buffer.concat(chunks)))
+    req.on('error', reject)
+  })
+}
+
+function esImagen(buf) {
+  if (buf.length < 12) return false
+  const jpeg = buf[0] === 0xff && buf[1] === 0xd8 && buf[2] === 0xff
+  const png = buf[0] === 0x89 && buf[1] === 0x50 && buf[2] === 0x4e && buf[3] === 0x47
+  const webp =
+    buf[0] === 0x52 && buf[1] === 0x49 && buf[2] === 0x46 && buf[3] === 0x46 &&
+    buf[8] === 0x57 && buf[9] === 0x45 && buf[10] === 0x42 && buf[11] === 0x50
+  return jpeg || png || webp
+}
+
 function readBody(req) {
   return new Promise((resolve, reject) => {
     let size = 0
@@ -193,6 +221,24 @@ async function handleApi(req, res, url) {
     return sendJson(res, 200, { ok: true, ...panelData() })
   }
 
+  if (req.method === 'POST' && url.pathname === '/api/foto') {
+    if (rateLimited(ip)) return sendJson(res, 429, { ok: false, error: 'rate' })
+    if (clean(req.headers['x-clave'], 100) !== PANEL_KEY) {
+      return sendJson(res, 403, { ok: false, error: 'clave' })
+    }
+    let buf
+    try {
+      buf = await readRawBody(req, 15_000_000)
+    } catch {
+      return sendJson(res, 413, { ok: false, error: 'too_large' })
+    }
+    if (!esImagen(buf)) {
+      return sendJson(res, 400, { ok: false, error: 'not_image' })
+    }
+    fs.writeFileSync(path.join(PUBLIC_DIR, 'fiesta.jpg'), buf)
+    return sendJson(res, 200, { ok: true })
+  }
+
   if (req.method === 'POST' && url.pathname === '/api/export') {
     let body
     try {
@@ -252,6 +298,7 @@ const server = http.createServer(async (req, res) => {
   let pathname = decodeURIComponent(url.pathname)
   if (pathname === '/') pathname = '/index.html'
   if (pathname === '/panel') pathname = '/panel.html'
+  if (pathname === '/foto') pathname = '/foto.html'
 
   const filePath = path.join(PUBLIC_DIR, pathname)
   if (!filePath.startsWith(PUBLIC_DIR)) {

@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Subir foto · Noche de la Nostalgia</title>
+  <meta name="robots" content="noindex" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600&family=Righteous&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/styles.css" />
+  <style>
+    .drop {
+      margin-top: 1.5rem;
+      border: 2px dashed var(--nn-line);
+      border-radius: 16px;
+      padding: 3rem 1.5rem;
+      text-align: center;
+      color: var(--nn-muted);
+      cursor: pointer;
+      transition: border-color 160ms ease, background 160ms ease, box-shadow 160ms ease;
+    }
+    .drop.activo, .drop:hover {
+      border-color: var(--nn-pink);
+      background: rgba(255, 62, 138, 0.07);
+      box-shadow: 0 0 24px rgba(255, 62, 138, 0.2);
+    }
+    .drop input { display: none; }
+    .preview { margin-top: 1.5rem; border-radius: 14px; overflow: hidden; border: 1px solid var(--nn-line); }
+    .preview img { display: block; width: 100%; }
+  </style>
+</head>
+<body>
+<div class="nn-page">
+  <main class="panel-main wrap-narrow">
+    <p class="nn-eyebrow center">Solo para quien organiza</p>
+    <h1 class="section-title" style="margin-top:0.5rem">Foto de la fiesta</h1>
+    <p class="section-sub">Se usa de fondo en la sección de la dirección, con el efecto nocturno.</p>
+
+    <div class="nn-card">
+      <label class="nn-label" for="clave">Clave del panel</label>
+      <input class="nn-input" id="clave" type="password" autocomplete="current-password" placeholder="Tu clave de organizador" />
+
+      <label class="drop" id="drop" for="archivo">
+        <input type="file" id="archivo" accept="image/jpeg,image/png,image/webp" />
+        <span id="drop-texto">Arrastrá la foto acá, o hacé clic para elegirla</span>
+      </label>
+
+      <p class="nn-error hidden" id="error"></p>
+      <div class="nn-success hidden" id="exito" style="margin-top:1.25rem">
+        <p class="big">¡Foto instalada!</p>
+        <p>Ya quedó de fondo en la página. <a href="/" style="color:#b8f0cf">Ver cómo quedó</a></p>
+      </div>
+
+      <div class="preview hidden" id="preview"><img id="preview-img" alt="Vista previa de la foto" /></div>
+    </div>
+  </main>
+</div>
+
+<script>
+(function () {
+  var drop = document.getElementById('drop')
+  var archivo = document.getElementById('archivo')
+  var dropTexto = document.getElementById('drop-texto')
+  var errorEl = document.getElementById('error')
+  var exito = document.getElementById('exito')
+  var preview = document.getElementById('preview')
+  var previewImg = document.getElementById('preview-img')
+
+  function fallar(msg) {
+    errorEl.textContent = msg
+    errorEl.classList.remove('hidden')
+    exito.classList.add('hidden')
+  }
+
+  function subir(file) {
+    errorEl.classList.add('hidden')
+    exito.classList.add('hidden')
+    if (!file || !/^image\/(jpeg|png|webp)$/.test(file.type)) {
+      fallar('Elegí una foto JPG, PNG o WebP.')
+      return
+    }
+    if (file.size > 15000000) {
+      fallar('La foto pesa más de 15 MB. Mandá una versión más liviana.')
+      return
+    }
+    var clave = document.getElementById('clave').value
+    if (!clave) {
+      fallar('Poné la clave del panel primero.')
+      return
+    }
+    dropTexto.textContent = 'Subiendo...'
+    fetch('/api/foto', {
+      method: 'POST',
+      headers: { 'content-type': file.type, 'x-clave': clave },
+      body: file
+    })
+      .then(function (r) {
+        if (r.status === 403) throw new Error('Esa clave no abre esta puerta.')
+        if (!r.ok) throw new Error('No se pudo subir la foto. Probá de nuevo.')
+        return r.json()
+      })
+      .then(function () {
+        exito.classList.remove('hidden')
+        previewImg.src = '/fiesta.jpg?v=' + Date.now()
+        preview.classList.remove('hidden')
+      })
+      .catch(function (e) { fallar(e.message) })
+      .finally(function () {
+        dropTexto.textContent = 'Arrastrá la foto acá, o hacé clic para elegirla'
+      })
+  }
+
+  archivo.addEventListener('change', function () { subir(archivo.files[0]) })
+
+  ;['dragenter', 'dragover'].forEach(function (ev) {
+    drop.addEventListener(ev, function (e) { e.preventDefault(); drop.classList.add('activo') })
+  })
+  ;['dragleave', 'drop'].forEach(function (ev) {
+    drop.addEventListener(ev, function (e) { e.preventDefault(); drop.classList.remove('activo') })
+  })
+  drop.addEventListener('drop', function (e) {
+    var f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]
+    subir(f)
+  })
+})()
+</script>
+</body>
+</html>

@@ -13,6 +13,8 @@ node server.js
 - Página de invitados: http://localhost:3000
 - Panel del organizador: http://localhost:3000/panel
   - Clave por defecto: `nostalgia2026` (cambiala, ver abajo)
+- Subir/cambiar la foto de la fiesta: http://localhost:3000/foto
+  (misma clave; la foto queda en `public/fiesta.jpg`)
 
 ## Dónde quedan los datos
 
