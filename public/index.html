@@ -154,29 +154,13 @@
       <div class="lugar-card">
         <p class="nn-eyebrow">Dónde es</p>
         <p class="lugar-dir">Parada 26 de la Brava</p>
-        <p class="lugar-sub">Calle Rembrandt · Punta del Este</p>
-        <a class="nn-cta-door" href="https://www.google.com/maps/search/?api=1&amp;query=-34.91972%2C-54.89148" target="_blank" rel="noopener">Cómo llegar</a>
-      </div>
-      <div class="lugar-map">
-        <iframe
-          src="https://maps.google.com/maps?q=-34.91971956505641,-54.891475435203084&amp;z=17&amp;hl=es&amp;output=embed"
-          title="Mapa: Parada 26 de la Brava, calle Rembrandt, Punta del Este"
-          allowfullscreen=""
-          loading="lazy"
-          referrerpolicy="strict-origin-when-cross-origin"></iframe>
+        <p class="lugar-sub">Punta del Este</p>
       </div>
     </div>
   </section>
 
-  <!-- PLAYLIST -->
-  <section class="section wrap">
-    <h2 class="section-title">Lo que ya está sonando</h2>
-    <div class="chips-row" id="chips"></div>
-    <p class="empty-note">Los temas pedidos quedan en secreto hasta la noche de la fiesta.</p>
-  </section>
-
   <footer class="footer">
-    <p>Noche de la Nostalgia · Lunes 24 de agosto · Parada 26 de la Brava, calle Rembrandt, Punta del Este</p>
+    <p>Noche de la Nostalgia · Lunes 24 de agosto · Parada 26 de la Brava, Punta del Este</p>
   </footer>
 </div>
 
@@ -192,15 +176,6 @@
     return '<span class="' + (i % 3 === 0 ? 'hot' : '') + '">♪ ' + s + '</span>'
   }).join('')
 
-  var chips = document.getElementById('chips')
-
-  function pintarPlaylist(data) {
-    chips.innerHTML =
-      '<span class="nn-chip"><b>' + data.personas + '</b> en la pista</span>' +
-      '<span class="nn-chip"><b>' + data.confirmados + '</b> confirmados</span>' +
-      '<span class="nn-chip"><b>' + data.temas + '</b> temas pedidos</span>'
-  }
-
   // si hay una foto subida más nueva que la del sitio, usarla de fondo
   fetch('/api/foto', { method: 'GET' }).then(function (r) {
     if (r.ok) {
@@ -208,14 +183,6 @@
       if (bg) bg.style.backgroundImage = "url('/api/foto?v=" + Date.now() + "')"
     }
   }).catch(function () { /* queda la foto del sitio */ })
-
-  function cargarPlaylist() {
-    fetch('/api/playlist')
-      .then(function (r) { return r.json() })
-      .then(pintarPlaylist)
-      .catch(function () { /* la página sigue funcionando sin la lista */ })
-  }
-  cargarPlaylist()
 
   var form = document.getElementById('rsvp')
   var exito = document.getElementById('exito')
@@ -257,7 +224,6 @@
         form.classList.add('hidden')
         exito.classList.remove('hidden')
         form.reset()
-        cargarPlaylist()
       })
       .catch(function () {
         errorEl.textContent = 'No pudimos guardar tu confirmación. Probá de nuevo en un ratito.'

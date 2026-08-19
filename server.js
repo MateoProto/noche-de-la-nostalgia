@@ -123,22 +123,6 @@ function readBody(req) {
   })
 }
 
-function playlistData() {
-  const stats = db
-    .prepare(
-      `SELECT COUNT(*) AS confirmados, COALESCE(SUM(1 + acompanantes), 0) AS personas
-       FROM rsvps WHERE asiste = 1`,
-    )
-    .get()
-  // Solo contadores: las canciones quedan en secreto hasta la fiesta.
-  const total = db.prepare(`SELECT COUNT(*) AS n FROM rsvps`).get()
-  return {
-    confirmados: Number(stats.confirmados) || 0,
-    personas: Number(stats.personas) || 0,
-    temas: Number(total.n) || 0,
-  }
-}
-
 function panelData() {
   const rows = db.prepare(`SELECT * FROM rsvps ORDER BY created_at DESC, id DESC`).all()
   const confirmados = rows.filter((r) => Number(r.asiste) === 1)
@@ -173,10 +157,6 @@ function toCsv() {
 
 async function handleApi(req, res, url) {
   const ip = req.socket.remoteAddress || 'desconocida'
-
-  if (req.method === 'GET' && url.pathname === '/api/playlist') {
-    return sendJson(res, 200, playlistData())
-  }
 
   if (req.method === 'POST' && url.pathname === '/api/rsvp') {
     if (rateLimited(ip)) return sendJson(res, 429, { ok: false, error: 'rate' })
