@@ -130,16 +130,12 @@ function playlistData() {
        FROM rsvps WHERE asiste = 1`,
     )
     .get()
-  const temas = db
-    .prepare(
-      `SELECT cancion, nombre, substr(apellido, 1, 1) AS inicial, asiste
-       FROM rsvps ORDER BY created_at DESC, id DESC LIMIT 150`,
-    )
-    .all()
+  // Solo contadores: las canciones quedan en secreto hasta la fiesta.
+  const total = db.prepare(`SELECT COUNT(*) AS n FROM rsvps`).get()
   return {
     confirmados: Number(stats.confirmados) || 0,
     personas: Number(stats.personas) || 0,
-    temas,
+    temas: Number(total.n) || 0,
   }
 }
 
