@@ -172,8 +172,7 @@
   <section class="section wrap">
     <h2 class="section-title">Lo que ya está sonando</h2>
     <div class="chips-row" id="chips"></div>
-    <p class="empty-note hidden" id="vacio">Todavía no hay temas pedidos. El primero marca el rumbo de la noche.</p>
-    <ul class="tickets" id="tickets"></ul>
+    <p class="empty-note">Los temas pedidos quedan en secreto hasta la noche de la fiesta.</p>
   </section>
 
   <footer class="footer">
@@ -194,30 +193,12 @@
   }).join('')
 
   var chips = document.getElementById('chips')
-  var tickets = document.getElementById('tickets')
-  var vacio = document.getElementById('vacio')
-
-  function esc(t) {
-    var d = document.createElement('div')
-    d.textContent = t == null ? '' : String(t)
-    return d.innerHTML
-  }
 
   function pintarPlaylist(data) {
     chips.innerHTML =
       '<span class="nn-chip"><b>' + data.personas + '</b> en la pista</span>' +
       '<span class="nn-chip"><b>' + data.confirmados + '</b> confirmados</span>' +
       '<span class="nn-chip"><b>' + data.temas.length + '</b> temas pedidos</span>'
-    if (!data.temas.length) {
-      vacio.classList.remove('hidden')
-      tickets.innerHTML = ''
-      return
-    }
-    vacio.classList.add('hidden')
-    tickets.innerHTML = data.temas.map(function (t) {
-      return '<li class="nn-ticket"><p class="song">' + esc(t.cancion) + '</p>' +
-        '<p class="who">pedida por ' + esc(t.nombre) + ' ' + esc(t.inicial) + '.</p></li>'
-    }).join('')
   }
 
   // si hay una foto subida más nueva que la del sitio, usarla de fondo
