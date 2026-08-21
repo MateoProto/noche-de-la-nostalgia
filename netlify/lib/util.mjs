@@ -13,6 +13,19 @@ export function clean(value, max) {
   return value.replace(/\s+/g, ' ').trim().slice(0, max)
 }
 
+// Las URLs del tema las manda el navegador, así que solo guardamos https de Apple.
+export function urlApple(value) {
+  if (typeof value !== 'string' || value.length > 300) return ''
+  let u
+  try {
+    u = new URL(value)
+  } catch {
+    return ''
+  }
+  if (u.protocol !== 'https:') return ''
+  return /(^|\.)(apple\.com|mzstatic\.com)$/.test(u.hostname) ? u.href : ''
+}
+
 export function claveOk(clave) {
   const esperada = globalThis.Netlify?.env.get('PANEL_KEY') || 'nostalgia2026'
   return clean(clave, 100) === esperada

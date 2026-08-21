@@ -1,4 +1,4 @@
-import { clean, fechaUruguay, json, tienda } from '../lib/util.mjs'
+import { clean, fechaUruguay, json, tienda, urlApple } from '../lib/util.mjs'
 
 export default async (req) => {
   if (req.method !== 'POST') return json(405, { ok: false, error: 'method' })
@@ -13,7 +13,7 @@ export default async (req) => {
 
   const nombre = clean(body.nombre, 60)
   const apellido = clean(body.apellido, 60)
-  const cancion = clean(body.cancion, 120)
+  const cancion = clean(body.cancion, 160)
   if (!nombre || !apellido || !cancion) {
     return json(400, { ok: false, error: 'missing_fields' })
   }
@@ -22,12 +22,18 @@ export default async (req) => {
   const acompanantes =
     asiste === 1 && Number.isInteger(nRaw) ? Math.min(Math.max(nRaw, 0), 5) : 0
 
+  const trackId = Number(body.track_id)
+
   const id = crypto.randomUUID()
   const fila = {
     id,
     nombre,
     apellido,
     cancion,
+    artista: clean(body.artista, 120),
+    track_id: Number.isInteger(trackId) && trackId > 0 ? trackId : null,
+    preview_url: urlApple(body.preview_url),
+    artwork_url: urlApple(body.artwork_url),
     asiste,
     acompanantes,
     mensaje: clean(body.mensaje, 300),

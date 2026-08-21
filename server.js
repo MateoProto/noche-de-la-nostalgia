@@ -23,6 +23,10 @@ db.exec(`
     nombre TEXT NOT NULL,
     apellido TEXT NOT NULL,
     cancion TEXT NOT NULL,
+    artista TEXT,
+    track_id INTEGER,
+    preview_url TEXT,
+    artwork_url TEXT,
     asiste INTEGER NOT NULL DEFAULT 1,
     acompanantes INTEGER NOT NULL DEFAULT 0,
     trae TEXT,
@@ -30,6 +34,17 @@ db.exec(`
     created_at TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))
   );
 `)
+
+// Las columnas del tema llegaron después: las agregamos si la base ya existía.
+const columnas = db.prepare(`PRAGMA table_info(rsvps)`).all().map((c) => c.name)
+for (const [col, tipo] of [
+  ['artista', 'TEXT'],
+  ['track_id', 'INTEGER'],
+  ['preview_url', 'TEXT'],
+  ['artwork_url', 'TEXT'],
+]) {
+  if (!columnas.includes(col)) db.exec(`ALTER TABLE rsvps ADD COLUMN ${col} ${tipo}`)
+}
 
 const MIME = {
   '.html': 'text/html; charset=utf-8',
@@ -57,6 +72,19 @@ function rateLimited(ip) {
 function clean(value, max) {
   if (typeof value !== 'string') return ''
   return value.replace(/\s+/g, ' ').trim().slice(0, max)
+}
+
+// Las URLs del tema las manda el navegador, así que solo guardamos https de Apple.
+function urlApple(value) {
+  if (typeof value !== 'string' || value.length > 300) return ''
+  let u
+  try {
+    u = new URL(value)
+  } catch {
+    return ''
+  }
+  if (u.protocol !== 'https:') return ''
+  return /(^|\.)(apple\.com|mzstatic\.com)$/.test(u.hostname) ? u.href : ''
 }
 
 function securityHeaders(res) {
@@ -170,7 +198,7 @@ async function handleApi(req, res, url) {
     if (clean(body.web, 100)) return sendJson(res, 200, { ok: true })
     const nombre = clean(body.nombre, 60)
     const apellido = clean(body.apellido, 60)
-    const cancion = clean(body.cancion, 120)
+    const cancion = clean(body.cancion, 160)
     if (!nombre || !apellido || !cancion) {
       return sendJson(res, 400, { ok: false, error: 'missing_fields' })
     }
@@ -179,10 +207,23 @@ async function handleApi(req, res, url) {
     const acompanantes =
       asiste === 1 && Number.isInteger(nRaw) ? Math.min(Math.max(nRaw, 0), 5) : 0
     const mensaje = clean(body.mensaje, 300)
+    const trackIdRaw = Number(body.track_id)
     db.prepare(
-      `INSERT INTO rsvps (nombre, apellido, cancion, asiste, acompanantes, mensaje)
-       VALUES (?, ?, ?, ?, ?, ?)`,
-    ).run(nombre, apellido, cancion, asiste, acompanantes, mensaje)
+      `INSERT INTO rsvps (nombre, apellido, cancion, artista, track_id, preview_url,
+                          artwork_url, asiste, acompanantes, mensaje)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    ).run(
+      nombre,
+      apellido,
+      cancion,
+      clean(body.artista, 120),
+      Number.isInteger(trackIdRaw) && trackIdRaw > 0 ? trackIdRaw : null,
+      urlApple(body.preview_url),
+      urlApple(body.artwork_url),
+      asiste,
+      acompanantes,
+      mensaje,
+    )
     return sendJson(res, 200, { ok: true })
   }
 
