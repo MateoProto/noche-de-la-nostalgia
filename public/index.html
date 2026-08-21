@@ -74,6 +74,11 @@ input,select,textarea,button{font-family:inherit}
 .nnx21::-moz-range-thumb{width:14px;height:14px;border:none;border-radius:50%;background:#fff3d6;box-shadow:0 0 10px rgba(255,62,138,.75);cursor:pointer}
 .nnx21:focus{outline:none}
 .nnx21:focus-visible{box-shadow:0 0 0 3px rgba(255,62,138,.3)}
+.nnx22{height:4px;background-image:linear-gradient(90deg,#ff7ab0,#ff7ab0)}
+.nnx22::-webkit-slider-runnable-track{height:4px}
+.nnx22::-moz-range-track{height:4px}
+.nnx22::-webkit-slider-thumb{width:11px;height:11px;margin-top:-3.5px}
+.nnx22::-moz-range-thumb{width:11px;height:11px}
 
 .nn-hp{position:absolute;left:-9999px;opacity:0;height:0;overflow:hidden}
 [hidden]{display:none !important}
@@ -260,16 +265,14 @@ input,select,textarea,button{font-family:inherit}
                 <button type="button" data-act="playPausa" id="nn-play" aria-label="Reproducir" style="flex:none;display:flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:50%;border:none;cursor:pointer;color:#2a0f18;background:linear-gradient(135deg,#ff3e8a,#ff6aa5);box-shadow:0 0 18px rgba(255,62,138,.45);transition:transform 140ms ease,box-shadow 200ms ease" class="nnx20">
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path id="nn-play-icono" d="M8 5v14l11-7z"></path></svg>
                 </button>
-                <div style="flex:1 1 150px;min-width:0">
+                <div style="flex:1 1 190px;display:flex;align-items:center;gap:10px;min-width:0;font-size:11px;color:#8e6f92;font-variant-numeric:tabular-nums">
+                  <i id="nn-tiempo" style="font-style:normal;flex:none;min-width:30px">0:00</i>
                   <input type="range" id="nn-seek" min="0" max="1000" step="1" value="0" aria-label="Progreso del tema" class="nnx21">
-                  <div style="display:flex;justify-content:space-between;margin-top:6px;font-size:11px;color:#8e6f92;font-variant-numeric:tabular-nums">
-                    <i id="nn-tiempo" style="font-style:normal">0:00</i>
-                    <i id="nn-duracion" style="font-style:normal">0:30</i>
-                  </div>
+                  <i id="nn-duracion" style="font-style:normal;flex:none;min-width:30px;text-align:right">0:30</i>
                 </div>
                 <div style="flex:none;display:flex;align-items:center;gap:8px">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="#8e6f92" aria-hidden="true"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3a4.5 4.5 0 0 0-2.5-4.03v8.06A4.5 4.5 0 0 0 16.5 12z"></path></svg>
-                  <input type="range" id="nn-vol" min="0" max="1" step="0.05" value="1" aria-label="Volumen" style="width:74px" class="nnx21">
+                  <input type="range" id="nn-vol" min="0" max="1" step="0.05" value="1" aria-label="Volumen" style="width:74px" class="nnx21 nnx22">
                 </div>
                 <audio id="nn-elegida-audio" preload="none"></audio>
               </div>
