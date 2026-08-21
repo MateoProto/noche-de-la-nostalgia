@@ -65,6 +65,15 @@ input,select,textarea,button{font-family:inherit}
 .nnx17[aria-selected="true"]{background:rgba(255,62,138,.18);border-color:#ff3e8a;box-shadow:0 0 0 3px rgba(255,62,138,.16)}
 .nnx19::-webkit-scrollbar{width:9px}
 .nnx19::-webkit-scrollbar-thumb{background:#4d2a55;border-radius:999px}
+.nnx20:hover{transform:scale(1.06) !important;box-shadow:0 0 26px rgba(255,62,138,.65) !important}
+.nnx20:active{transform:scale(.95) !important}
+.nnx21{-webkit-appearance:none;appearance:none;display:block;width:100%;height:6px;margin:0;border-radius:999px;background-color:#4d2a55;background-image:linear-gradient(90deg,#ff3e8a,#f5c044);background-repeat:no-repeat;background-size:0% 100%;cursor:pointer}
+.nnx21::-webkit-slider-runnable-track{height:6px;background:transparent;border-radius:999px}
+.nnx21::-moz-range-track{height:6px;background:transparent;border-radius:999px}
+.nnx21::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:14px;height:14px;margin-top:-4px;border:none;border-radius:50%;background:#fff3d6;box-shadow:0 0 10px rgba(255,62,138,.75);cursor:pointer}
+.nnx21::-moz-range-thumb{width:14px;height:14px;border:none;border-radius:50%;background:#fff3d6;box-shadow:0 0 10px rgba(255,62,138,.75);cursor:pointer}
+.nnx21:focus{outline:none}
+.nnx21:focus-visible{box-shadow:0 0 0 3px rgba(255,62,138,.3)}
 
 .nn-hp{position:absolute;left:-9999px;opacity:0;height:0;overflow:hidden}
 [hidden]{display:none !important}
@@ -247,7 +256,23 @@ input,select,textarea,button{font-family:inherit}
                 <p style="margin:2px 0 0;font-size:13px;color:#c7a9c9;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"><i id="nn-elegida-artista" style="font-style:normal"></i></p>
               </div>
               <button type="button" data-act="quitarTema" style="flex:none;border:1px solid #4d2a55;border-radius:11px;background:rgba(20,8,24,.7);color:#f6ecf6;font-family:'Righteous',sans-serif;font-size:11px;letter-spacing:.1em;padding:9px 14px;cursor:pointer" class="nnx3">Cambiar</button>
-              <audio id="nn-elegida-audio" controls preload="none" hidden style="width:100%;height:38px"></audio>
+              <div id="nn-player" hidden style="width:100%;display:flex;align-items:center;gap:12px;flex-wrap:wrap;border-top:1px solid rgba(77,42,85,.75);padding-top:12px">
+                <button type="button" data-act="playPausa" id="nn-play" aria-label="Reproducir" style="flex:none;display:flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:50%;border:none;cursor:pointer;color:#2a0f18;background:linear-gradient(135deg,#ff3e8a,#ff6aa5);box-shadow:0 0 18px rgba(255,62,138,.45);transition:transform 140ms ease,box-shadow 200ms ease" class="nnx20">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path id="nn-play-icono" d="M8 5v14l11-7z"></path></svg>
+                </button>
+                <div style="flex:1 1 150px;min-width:0">
+                  <input type="range" id="nn-seek" min="0" max="1000" step="1" value="0" aria-label="Progreso del tema" class="nnx21">
+                  <div style="display:flex;justify-content:space-between;margin-top:6px;font-size:11px;color:#8e6f92;font-variant-numeric:tabular-nums">
+                    <i id="nn-tiempo" style="font-style:normal">0:00</i>
+                    <i id="nn-duracion" style="font-style:normal">0:30</i>
+                  </div>
+                </div>
+                <div style="flex:none;display:flex;align-items:center;gap:8px">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="#8e6f92" aria-hidden="true"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3a4.5 4.5 0 0 0-2.5-4.03v8.06A4.5 4.5 0 0 0 16.5 12z"></path></svg>
+                  <input type="range" id="nn-vol" min="0" max="1" step="0.05" value="1" aria-label="Volumen" style="width:74px" class="nnx21">
+                </div>
+                <audio id="nn-elegida-audio" preload="none"></audio>
+              </div>
             </div>
           </div>
 
@@ -662,6 +687,62 @@ input,select,textarea,button{font-family:inherit}
     }, 350)
   }
 
+  /* ---- reproductor del preview ---- */
+  var audio = $('nn-elegida-audio')
+
+  function pintarBarra(el, pct) {
+    el.style.backgroundSize = Math.max(0, Math.min(100, pct)) + '% 100%'
+  }
+
+  function mmss(seg) {
+    if (!isFinite(seg) || seg < 0) seg = 0
+    var m = Math.floor(seg / 60)
+    var s = Math.floor(seg % 60)
+    return m + ':' + (s < 10 ? '0' + s : s)
+  }
+
+  function pintarPlay(sonando) {
+    $('nn-play-icono').setAttribute('d', sonando ? 'M6 5h4v14H6zm8 0h4v14h-4z' : 'M8 5v14l11-7z')
+    $('nn-play').setAttribute('aria-label', sonando ? 'Pausar' : 'Reproducir')
+  }
+
+  function reiniciarBarra() {
+    $('nn-seek').value = 0
+    pintarBarra($('nn-seek'), 0)
+    $('nn-tiempo').textContent = '0:00'
+    $('nn-duracion').textContent = '0:30'
+  }
+
+  audio.addEventListener('loadedmetadata', function () {
+    $('nn-duracion').textContent = mmss(audio.duration)
+  })
+  audio.addEventListener('timeupdate', function () {
+    var dur = audio.duration
+    if (!isFinite(dur) || !dur) return
+    $('nn-tiempo').textContent = mmss(audio.currentTime)
+    $('nn-seek').value = Math.round((audio.currentTime / dur) * 1000)
+    pintarBarra($('nn-seek'), (audio.currentTime / dur) * 100)
+  })
+  audio.addEventListener('play', function () { pintarPlay(true) })
+  audio.addEventListener('pause', function () { pintarPlay(false) })
+  audio.addEventListener('ended', function () {
+    pintarPlay(false)
+    audio.currentTime = 0
+    reiniciarBarra()
+  })
+  $('nn-seek').addEventListener('input', function () {
+    var pct = Number($('nn-seek').value) / 1000
+    pintarBarra($('nn-seek'), pct * 100)
+    if (isFinite(audio.duration) && audio.duration) audio.currentTime = pct * audio.duration
+  })
+  $('nn-vol').addEventListener('input', function () {
+    audio.volume = Number($('nn-vol').value)
+    pintarBarra($('nn-vol'), audio.volume * 100)
+  })
+  // el navegador puede restaurar el valor del slider al recargar: lo sincronizamos
+  // con el audio para que la barra y el volumen real nunca queden desfasados
+  audio.volume = Number($('nn-vol').value)
+  pintarBarra($('nn-vol'), audio.volume * 100)
   function elegirTema(t) {
     if (!t) return
     estado.tema = t
@@ -676,13 +757,17 @@ input,select,textarea,button{font-family:inherit}
     tapa.alt = t.tapa ? 'Tapa de ' + t.tema : ''
     $('nn-elegida-tema').textContent = t.tema
     $('nn-elegida-artista').textContent = t.artista
-    var audio = $('nn-elegida-audio')
     if (t.preview) {
       audio.src = t.preview
-      audio.hidden = false
+      reiniciarBarra()
+      $('nn-player').hidden = false
+      // arranca solo: el click o el Enter con el que eligió cuenta como gesto del
+      // usuario, así que los navegadores dejan reproducir sin pedir otro play
+      var sonando = audio.play()
+      if (sonando && sonando.catch) sonando.catch(function () { pintarPlay(false) })
     } else {
       audio.removeAttribute('src')
-      audio.hidden = true
+      $('nn-player').hidden = true
     }
     $('nn-elegida').hidden = false
     error('')
@@ -691,10 +776,10 @@ input,select,textarea,button{font-family:inherit}
 
   function quitarTema() {
     estado.tema = null
-    var audio = $('nn-elegida-audio')
     audio.pause()
     audio.removeAttribute('src')
-    audio.hidden = true
+    $('nn-player').hidden = true
+    reiniciarBarra()
     $('nn-elegida').hidden = true
     $('nn-buscador').hidden = false
     $('nn-cancion').value = ''
@@ -808,6 +893,10 @@ input,select,textarea,button{font-family:inherit}
     else if (act === 'plusInc') { estado.plus = Math.min(5, estado.plus + 1); pintarPlus() }
     else if (act === 'submit') { enviar() }
     else if (act === 'quitarTema') { quitarTema(); $('nn-cancion').focus() }
+    else if (act === 'playPausa') {
+      if (audio.paused) { var r = audio.play(); if (r && r.catch) r.catch(function () {}) }
+      else audio.pause()
+    }
     else if (act === 'reset') {
       estado.plus = 0
       estado.asiste = true
